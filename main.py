@@ -540,22 +540,22 @@ class MiniPhotoshopApp(QMainWindow):
 
         /* ── List Widget (History) ─────────────────────────── */
         QListWidget {
-            background-color: #0f0f13 !important;
+            background-color: #0f0f13;
             border: 1px solid #1e1e24;
             border-radius: 7px;
             padding: 3px;
             outline: 0;
         }
         QListWidget::item {
-            background-color: transparent !important;
-            color: #71717a !important;
+            background-color: transparent;
+            color: #71717a;
             padding: 7px 8px;
             border-radius: 5px;
             margin: 1px 0;
             font-size: 11px;
         }
-        QListWidget::item:hover    { background-color: #1a1a20 !important; color: #a1a1aa !important; }
-        QListWidget::item:selected { background-color: #172554 !important; color: #93c5fd !important; border-left: 2px solid #3b82f6; font-weight: 600; }
+        QListWidget::item:hover    { background-color: #1a1a20; color: #a1a1aa; }
+        QListWidget::item:selected { background-color: #172554; color: #93c5fd; border-left: 2px solid #3b82f6; font-weight: 600; }
 
         /* ── Scroll Bars ───────────────────────────────────── */
         QScrollArea            { border: none; background-color: transparent; }
@@ -583,6 +583,16 @@ class MiniPhotoshopApp(QMainWindow):
         QMenu::item         { padding: 8px 22px 8px 14px; color: #c4c4cf; border-radius: 5px; font-size: 12px; }
         QMenu::item:selected { background-color: #2563eb; color: #ffffff; }
         QMenu::separator    { height: 1px; background-color: #232328; margin: 4px 0; }
+        
+        /* ── Message Box ────────────────────────────────────── */
+        QMessageBox {
+            background-color: #111114;
+        }
+        QMessageBox QLabel {
+            color: #e2e2e6;
+            min-width: 350px;
+            min-height: 150px;
+        }
         """
         self.setStyleSheet(qss)
 
@@ -1330,7 +1340,31 @@ class MiniPhotoshopApp(QMainWindow):
             )
             return
 
-        file_filter = "Gambar PNG (*.png);;Gambar JPEG (*.jpg *.jpeg);;Gambar BMP (*.bmp)"
+        self.statusBar().showMessage("Menghitung estimasi ukuran penyimpanan...")
+        QApplication.processEvents()
+        
+        # Hitung ukuran gambar di memori untuk masing-masing format
+        _, enc_png = cv2.imencode('.png', self.current_image)
+        size_png_kb = len(enc_png) / 1024.0
+        
+        _, enc_jpg = cv2.imencode('.jpg', self.current_image, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
+        size_jpg_kb = len(enc_jpg) / 1024.0
+        
+        _, enc_bmp = cv2.imencode('.bmp', self.current_image)
+        size_bmp_kb = len(enc_bmp) / 1024.0
+        
+        self.statusBar().showMessage("Ready to save.")
+        
+        msg = (f"Estimasi ukuran file yang akan disimpan:\n\n"
+               f"• PNG   : {size_png_kb:.2f} KB\n"
+               f"• JPEG  : {size_jpg_kb:.2f} KB\n"
+               f"• BMP   : {size_bmp_kb:.2f} KB\n\n"
+               f"Pilih format yang diinginkan pada kolom 'Save as type' di jendela berikutnya.")
+        QMessageBox.information(self, "Estimasi Ukuran File", msg)
+
+        file_filter = (f"Gambar PNG ~{size_png_kb:.2f} KB (*.png);;"
+                       f"Gambar JPEG ~{size_jpg_kb:.2f} KB (*.jpg *.jpeg);;"
+                       f"Gambar BMP ~{size_bmp_kb:.2f} KB (*.bmp)")
         file_name, selected_filter = QFileDialog.getSaveFileName(
             self, "Simpan Gambar Sebagai", "", file_filter
         )
